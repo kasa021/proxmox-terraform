@@ -34,10 +34,10 @@ variable "target_node" {
   default     = "pve"
 }
 
-variable "template_name" {
-  description = "使用するVMテンプレート名"
-  type        = string
-  default     = "ubuntu-2204-template"
+variable "template_id" {
+  description = "使用するVMテンプレートのID"
+  type        = number
+  default     = 9000
 }
 
 variable "cores" {
@@ -64,21 +64,28 @@ variable "storage" {
   default     = "local-lvm"
 }
 
+variable "use_dhcp" {
+  description = "DHCPを使用するか（trueの場合はDHCP、falseの場合は静的IP）"
+  type        = bool
+  default     = true
+}
+
 variable "ip_address" {
-  description = "IPアドレス (CIDR形式: 例 192.168.1.100/24)"
+  description = "IPアドレス (CIDR形式: 例 192.168.1.100/24) ※use_dhcp=falseの場合のみ使用"
   type        = string
+  default     = null
 }
 
 variable "gateway" {
-  description = "ゲートウェイアドレス"
+  description = "ゲートウェイアドレス ※use_dhcp=falseの場合のみ使用"
   type        = string
-  default     = "192.168.1.1"
+  default     = null
 }
 
 variable "bridge" {
   description = "ネットワークブリッジ"
   type        = string
-  default     = "vmbr0"
+  default     = "vmbr1"
 }
 
 variable "ssh_public_key" {
@@ -91,6 +98,13 @@ variable "username" {
   description = "VMのユーザー名"
   type        = string
   default     = "ubuntu"
+}
+
+variable "user_password" {
+  description = "VMのユーザーパスワード（設定しない場合は空文字）"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "tags" {
