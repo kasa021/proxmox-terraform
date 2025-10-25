@@ -7,7 +7,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   tags = var.tags
 
   clone {
-    vm_id = var.template_name
+    vm_id = var.template_id
     full  = true
   }
 
@@ -34,13 +34,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
   initialization {
     ip_config {
       ipv4 {
-        address = var.ip_address
-        gateway = var.gateway
+        address = var.use_dhcp ? "dhcp" : var.ip_address
+        gateway = var.use_dhcp ? null : var.gateway
       }
     }
 
     user_account {
       username = var.username
+      password = var.user_password != "" ? var.user_password : null
       keys     = var.ssh_public_key != "" ? [var.ssh_public_key] : []
     }
   }
