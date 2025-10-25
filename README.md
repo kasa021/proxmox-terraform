@@ -1,6 +1,6 @@
 # Proxmox Terraform プロジェクト
 
-TerraformでProxmox上のVMを管理するプロジェクトです。
+TerraformでProxmox上のVMとLXCコンテナを管理するプロジェクトです。
 
 ## 前提条件
 
@@ -34,11 +34,20 @@ proxmox-terraform/
 
 ## クイックスタート（対話形式）
 
-最も簡単な方法は、Makefileを使った対話形式のVM作成です。
+最も簡単な方法は、Makefileを使った対話形式の作成です。
+
+### VMの作成
 
 ```bash
 # VM作成ウィザードを起動
 make create-vm
+```
+
+### LXCコンテナの作成
+
+```bash
+# LXCコンテナ作成ウィザードを起動
+make create-container
 ```
 
 このコマンドで以下の項目を対話的に入力できます：
@@ -98,11 +107,25 @@ vms/
 ### その他のMakeコマンド
 
 ```bash
-make help       # ヘルプを表示
-make list-vms   # 管理中のVMリストを表示
-make destroy    # VMを削除（選択式）
-make clean      # 一時ファイルをクリーンアップ（選択式）
+make help              # ヘルプを表示
+make list-vms          # 管理中のVMリストを表示
+make list-containers   # 管理中のLXCコンテナリストを表示
+make destroy           # VM/コンテナを削除（選択式）
+make clean             # 一時ファイルをクリーンアップ（選択式）
 ```
+
+## VMとLXCコンテナの使い分け
+
+| 用途 | 推奨 | 理由 |
+|------|------|------|
+| Webサーバー、データベース | **LXC** | 軽量、高速起動、リソース効率◎ |
+| Docker/Kubernetesホスト | **LXC** | nesting機能でコンテナ実行可能 |
+| 開発・テスト環境 | **LXC** | すぐに起動、削除が簡単 |
+| Windows環境 | **VM** | LXCではWindowsは動作不可 |
+| カスタムカーネル | **VM** | LXCはホストカーネルを共有 |
+| 高度なセキュリティ要件 | **VM** | 完全な仮想化で分離度が高い |
+
+詳細は [LXCコンテナガイド](docs/lxc-container-guide.md) を参照してください。
 
 ## 手動セットアップ手順
 

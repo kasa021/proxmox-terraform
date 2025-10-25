@@ -10,8 +10,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# VM directories (contains state and secrets)
+# VM and Container directories (contains state and secrets)
 vms/
+containers/
 
 # Ansible
 ansible/inventory/*
