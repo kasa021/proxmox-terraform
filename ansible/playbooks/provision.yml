@@ -1,0 +1,139 @@
+---
+# VM初期設定用Playbook
+- name: Provision new VM
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    # タイムゾーン設定
+    timezone: "Asia/Tokyo"
+
+    # インストールする基本パッケージ
+    base_packages:
+      - vim
+      - git
+      - curl
+      - wget
+      - htop
+      - net-tools
+      - build-essential
+      - python3-pip
+      - tmux
+      - tree
+      - jq
+
+  tasks:
+    # ===== 基本設定 =====
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+      when: upgrade_packages | default(false)
+
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+
+    # ===== パッケージインストール =====
+    - name: Install base packages
+      apt:
+        name: "{{ base_packages }}"
+        state: present
+
+    - name: Install QEMU Guest Agent
+      apt:
+        name: qemu-guest-agent
+        state: present
+      notify: Restart QEMU Guest Agent
+
+    # ===== セキュリティ設定 =====
+    - name: Configure SSH to disable password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: Restart SSH
+      when: disable_password_auth | default(false)
+
+    - name: Configure SSH to disable root login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+      notify: Restart SSH
+      when: disable_root_login | default(false)
+
+    # ===== システム設定 =====
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      when: set_hostname | default(true)
+
+    - name: Update /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1 {{ inventory_hostname }}"
+        state: present
+
+    # ===== Docker インストール（オプション） =====
+    - name: Install Docker prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - lsb-release
+        state: present
+      when: install_docker | default(false)
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: install_docker | default(false)
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+      when: install_docker | default(false)
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+      when: install_docker | default(false)
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      when: install_docker | default(false)
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+
+    - name: Restart QEMU Guest Agent
+      service:
+        name: qemu-guest-agent
+        state: restarted
+        enabled: yes

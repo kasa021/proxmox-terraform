@@ -1,0 +1,28 @@
+---
+# VM設定変数（必要に応じて編集）
+
+# パッケージアップグレードを実行するか
+upgrade_packages: false
+
+# ホスト名を設定するか
+set_hostname: true
+
+# タイムゾーン
+timezone: "Asia/Tokyo"
+
+# SSH設定
+disable_password_auth: false  # パスワード認証を無効化
+disable_root_login: false     # root ログインを無効化
+
+# Dockerをインストールするか
+install_docker: false
+
+# 追加でインストールするパッケージ
+additional_packages: []
+  # - nginx
+  # - postgresql
+  # - redis-server
+
+# カスタムコマンドを実行（オプション）
+custom_commands: []
+  # - "echo 'Custom setup complete' > /tmp/setup.log"

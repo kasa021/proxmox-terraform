@@ -1,0 +1,13 @@
+---
+# Webサーバー構築用Playbook
+- name: Setup Web Server
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - webserver
+
+  vars:
+    configure_firewall: false
+    custom_nginx_config: false

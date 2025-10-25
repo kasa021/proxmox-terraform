@@ -53,6 +53,27 @@ make create-vm
 
 設定内容を確認後、自動的に`vms/{VM名}/`ディレクトリが作成され、Terraformファイルが生成され、VMが作成されます。
 
+### Ansible自動プロビジョニング
+
+VM作成後、自動的にAnsibleでプロビジョニングを実行できます：
+
+```bash
+# VM作成時に表示される確認メッセージで「y」を選択
+Ansibleを実行しますか? (y/N): y
+
+# プロビジョニング内容を選択
+1. 基本設定のみ（パッケージインストール、タイムゾーン設定）
+2. 基本設定 + Docker インストール
+3. カスタム設定（vars.ymlを手動編集）
+```
+
+Ansibleで自動的に以下が設定されます：
+- パッケージの更新とインストール（vim, git, curl, htop等）
+- タイムゾーン設定（Asia/Tokyo）
+- QEMU Guest Agentのインストール
+- Dockerのインストール（オプション）
+- SSH設定の強化（オプション）
+
 ### VM管理の仕組み
 
 各VMは独立したディレクトリで管理されます：
@@ -288,6 +309,122 @@ module "db_server" {
   disk_size  = 100
   # ...
 }
+```
+
+## Ansibleプロビジョニング
+
+### 前提条件
+
+Ansibleをインストールしてください：
+
+```bash
+# macOS
+brew install ansible
+
+# Ubuntu/Debian
+sudo apt install ansible
+
+# pip
+pip3 install ansible
+```
+
+### 基本的な使い方
+
+#### VM作成時に自動実行
+
+`make create-vm`でVM作成後、プロビジョニング確認が表示されます：
+
+```bash
+Ansibleを実行しますか? (y/N): y
+```
+
+#### 既存のVMにプロビジョニング
+
+後から既存のVMにプロビジョニングを実行する場合：
+
+```bash
+./scripts/provision-vm.sh vms/{VM名} {VM名} {ユーザー名}
+
+# 例
+./scripts/provision-vm.sh vms/web-server web-server ubuntu
+```
+
+### プロビジョニング内容のカスタマイズ
+
+#### オプション1: 対話式選択
+
+プロビジョニング実行時に以下から選択：
+
+1. **基本設定のみ**
+   - vim, git, curl, htop等のツール
+   - タイムゾーン設定
+   - QEMU Guest Agent
+
+2. **基本設定 + Docker**
+   - 基本設定 + Docker CE
+   - docker-compose
+
+3. **カスタム設定**
+   - `ansible/playbooks/vars.yml.example`をコピーして編集
+
+#### オプション2: カスタムPlaybook作成
+
+独自のPlaybookを作成する場合：
+
+```bash
+# カスタムPlaybookを作成
+vi ansible/playbooks/my-custom.yml
+
+# 実行
+cd ansible
+ansible-playbook -i inventory/{VM名} playbooks/my-custom.yml
+```
+
+### Ansible Playbook一覧
+
+| Playbook | 説明 |
+|---------|------|
+| `provision.yml` | 基本プロビジョニング（パッケージ、設定） |
+| `webserver.yml` | Nginx Webサーバーセットアップ |
+
+### カスタムロールの作成
+
+新しいロールを追加する場合：
+
+```bash
+# ロール構造を作成
+mkdir -p ansible/roles/my-role/{tasks,handlers,templates,vars}
+
+# タスクを定義
+vi ansible/roles/my-role/tasks/main.yml
+
+# Playbookから使用
+cat > ansible/playbooks/my-playbook.yml <<EOF
+---
+- name: My Custom Playbook
+  hosts: all
+  become: yes
+  roles:
+    - my-role
+EOF
+```
+
+### Ansibleディレクトリ構造
+
+```
+ansible/
+├── ansible.cfg           # Ansible設定
+├── playbooks/
+│   ├── provision.yml     # 基本プロビジョニング
+│   ├── webserver.yml     # Webサーバーセットアップ
+│   └── vars.yml.example  # 変数テンプレート
+├── roles/
+│   └── webserver/        # カスタムロール例
+│       ├── tasks/
+│       ├── handlers/
+│       └── templates/
+└── inventory/            # VM別インベントリ（自動生成）
+    └── {VM名}
 ```
 
 ## トラブルシューティング

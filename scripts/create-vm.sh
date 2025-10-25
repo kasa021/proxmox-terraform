@@ -334,6 +334,23 @@ if [[ "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}VM ID: ${VM_ID}${NC}"
     echo -e "${GREEN}ディレクトリ: ${VM_DIR}${NC}"
     echo ""
+
+    # Ansibleでプロビジョニングするか確認
+    echo -e "${BLUE}Ansibleでプロビジョニングを実行しますか？${NC}"
+    echo -e "パッケージのインストールや設定を自動化できます。"
+    echo ""
+    read -p "Ansibleを実行しますか? (y/N): " ANSIBLE_CONFIRM
+
+    if [[ "$ANSIBLE_CONFIRM" =~ ^[Yy]$ ]]; then
+        cd ../..
+        ./scripts/provision-vm.sh "${VM_DIR}" "${VM_NAME}" "${USERNAME}"
+    else
+        echo -e "${YELLOW}Ansibleをスキップしました${NC}"
+        echo -e "後でプロビジョニングする場合:"
+        echo -e "  ${BLUE}./scripts/provision-vm.sh ${VM_DIR} ${VM_NAME} ${USERNAME}${NC}"
+    fi
+
+    echo ""
     echo -e "VM管理コマンド:"
     echo -e "  ${BLUE}make list-vms${NC}   - 管理中のVMリストを表示"
     echo -e "  ${BLUE}make destroy${NC}    - VMを削除"

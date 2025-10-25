@@ -13,6 +13,13 @@ override.tf.json
 # VM directories (contains state and secrets)
 vms/
 
+# Ansible
+ansible/inventory/*
+!ansible/inventory/.gitkeep
+ansible/*.log
+ansible/**/*.retry
+ansible/playbooks/vars_*.yml
+
 # Environment files (contains secrets)
 .env
 .env.local
