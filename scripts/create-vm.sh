@@ -9,6 +9,30 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# .envファイルの確認と読み込み
+if [ ! -f ".env" ]; then
+    echo -e "${RED}エラー: .envファイルが見つかりません${NC}"
+    echo -e "${YELLOW}.env.exampleをコピーして.envを作成してください:${NC}"
+    echo -e "  ${BLUE}cp .env.example .env${NC}"
+    echo -e "  ${BLUE}vi .env  # 実際の値を設定${NC}"
+    exit 1
+fi
+
+# .envファイルを読み込む
+echo -e "${BLUE}.envファイルを読み込んでいます...${NC}"
+set -a
+source .env
+set +a
+
+# 必須の環境変数をチェック
+if [ -z "$PROXMOX_VE_ENDPOINT" ] || [ -z "$PROXMOX_VE_API_TOKEN" ]; then
+    echo -e "${RED}エラー: .envファイルにPROXMOX_VE_ENDPOINTとPROXMOX_VE_API_TOKENが設定されていません${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Proxmox接続情報を読み込みました${NC}"
+echo ""
+
 # ストレージの選択肢
 STORAGE_OPTIONS=("local-lvm" "usb-ssd-baffulo" "data-hdd" "data-ssd")
 
@@ -203,11 +227,47 @@ if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# main.tfを生成
+# VM用のディレクトリを作成
+VM_DIR="vms/${VM_NAME}"
 echo ""
+echo -e "${BLUE}VMディレクトリを作成しています: ${VM_DIR}${NC}"
+
+mkdir -p "${VM_DIR}"
+
+# variables.tfを生成
+cat > "${VM_DIR}/variables.tf" <<EOF
+variable "proxmox_endpoint" {
+  description = "ProxmoxのエンドポイントURL"
+  type        = string
+}
+
+variable "proxmox_api_token" {
+  description = "Proxmox APIトークン"
+  type        = string
+  sensitive   = true
+}
+
+variable "proxmox_insecure" {
+  description = "自己署名証明書を許可するか"
+  type        = bool
+  default     = true
+}
+EOF
+
+# terraform.tfvarsを.envから生成
+echo -e "${BLUE}terraform.tfvarsを生成しています...${NC}"
+cat > "${VM_DIR}/terraform.tfvars" <<EOF
+# Proxmox接続設定（.envから自動生成）
+proxmox_endpoint   = "${PROXMOX_VE_ENDPOINT}"
+proxmox_api_token  = "${PROXMOX_VE_API_TOKEN}"
+proxmox_insecure   = ${PROXMOX_VE_INSECURE:-true}
+EOF
+echo -e "${GREEN}terraform.tfvarsを生成しました${NC}"
+
+# main.tfを生成
 echo -e "${BLUE}Terraformファイルを生成しています...${NC}"
 
-cat > envs/example/main.tf <<EOF
+cat > "${VM_DIR}/main.tf" <<EOF
 module "ubuntu_vm" {
   source = "../../modules/proxmox_vm"
 
@@ -250,11 +310,11 @@ output "vm_info" {
 }
 EOF
 
-echo -e "${GREEN}main.tfを生成しました${NC}"
+echo -e "${GREEN}Terraformファイルを生成しました${NC}"
 echo ""
 echo -e "${BLUE}Terraformを初期化しています...${NC}"
 
-cd envs/example
+cd "${VM_DIR}"
 terraform init
 
 echo ""
@@ -270,8 +330,15 @@ if [[ "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}================================================${NC}"
     echo -e "${GREEN}VMの作成が完了しました！${NC}"
     echo -e "${GREEN}================================================${NC}"
+    echo -e "${GREEN}VM名: ${VM_NAME}${NC}"
+    echo -e "${GREEN}VM ID: ${VM_ID}${NC}"
+    echo -e "${GREEN}ディレクトリ: ${VM_DIR}${NC}"
+    echo ""
+    echo -e "VM管理コマンド:"
+    echo -e "  ${BLUE}make list-vms${NC}   - 管理中のVMリストを表示"
+    echo -e "  ${BLUE}make destroy${NC}    - VMを削除"
 else
     echo -e "${YELLOW}VM作成をスキップしました${NC}"
     echo -e "後で作成する場合は以下のコマンドを実行してください:"
-    echo -e "  ${BLUE}cd envs/example && terraform apply${NC}"
+    echo -e "  ${BLUE}cd ${VM_DIR} && terraform apply${NC}"
 fi

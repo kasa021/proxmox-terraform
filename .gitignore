@@ -10,6 +10,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# VM directories (contains state and secrets)
+vms/
+
 # Environment files (contains secrets)
 .env
 .env.local

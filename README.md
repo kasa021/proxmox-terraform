@@ -51,17 +51,36 @@ make create-vm
 - ユーザー名
 - パスワード
 
-設定内容を確認後、自動的にTerraformファイルが生成され、VMが作成されます。
+設定内容を確認後、自動的に`vms/{VM名}/`ディレクトリが作成され、Terraformファイルが生成され、VMが作成されます。
+
+### VM管理の仕組み
+
+各VMは独立したディレクトリで管理されます：
+```
+vms/
+├── web-server-01/      # VM名ごとのディレクトリ
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   └── terraform.tfstate
+├── db-server-01/
+│   └── ...
+└── test-vm/
+    └── ...
+```
+
+これにより：
+- **複数VMの並行管理**: 新しいVMを作成しても既存のVMに影響なし
+- **個別の状態管理**: 各VMが独立したステートファイルを持つ
+- **簡単な削除**: VMごとに選択して削除可能
 
 ### その他のMakeコマンド
 
 ```bash
-make help      # ヘルプを表示
-make init      # Terraformを初期化
-make plan      # 実行計画を確認
-make apply     # Terraformを実行
-make destroy   # VMを削除
-make clean     # 一時ファイルをクリーンアップ
+make help       # ヘルプを表示
+make list-vms   # 管理中のVMリストを表示
+make destroy    # VMを削除（選択式）
+make clean      # 一時ファイルをクリーンアップ（選択式）
 ```
 
 ## 手動セットアップ手順
