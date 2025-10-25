@@ -11,13 +11,14 @@ NC='\033[0m' # No Color
 
 # 引数チェック
 if [ $# -lt 3 ]; then
-    echo -e "${RED}Usage: $0 <vm-directory> <vm-name> <username>${NC}"
+    echo -e "${RED}Usage: $0 <vm-directory> <vm-name> <username> [ip-address]${NC}"
     exit 1
 fi
 
 VM_DIR=$1
 VM_NAME=$2
 USERNAME=$3
+VM_IP_ARG=$4  # 4番目の引数（オプション）
 
 echo -e "${BLUE}================================================${NC}"
 echo -e "${BLUE}    Ansible プロビジョニング${NC}"
@@ -35,29 +36,71 @@ if ! command -v ansible-playbook &> /dev/null; then
 fi
 
 # VMのIPアドレスを取得
-echo -e "${BLUE}VMのIPアドレスを取得しています...${NC}"
-echo ""
-echo -e "${YELLOW}VMが完全に起動するまで少し待ってください（30秒程度）${NC}"
-echo -e "${YELLOW}DHCP環境の場合、VMにログインしてIPアドレスを確認してください${NC}"
-echo ""
-read -p "VMのIPアドレスを入力してください: " VM_IP
+if [ -n "$VM_IP_ARG" ]; then
+    # 引数でIPアドレスが渡された場合
+    VM_IP="$VM_IP_ARG"
+    echo -e "${GREEN}TerraformからIPアドレスを自動取得しました: ${VM_IP}${NC}"
+    echo ""
+else
+    # 引数がない場合は手動入力
+    echo -e "${BLUE}VMのIPアドレスを取得しています...${NC}"
+    echo ""
+    echo -e "${YELLOW}VMが完全に起動するまで少し待ってください（30秒程度）${NC}"
+    echo -e "${YELLOW}DHCP環境の場合、VMにログインしてIPアドレスを確認してください${NC}"
+    echo ""
+    read -p "VMのIPアドレスを入力してください: " VM_IP
 
-if [ -z "$VM_IP" ]; then
-    echo -e "${RED}エラー: IPアドレスが入力されませんでした${NC}"
+    if [ -z "$VM_IP" ]; then
+        echo -e "${RED}エラー: IPアドレスが入力されませんでした${NC}"
+        exit 1
+    fi
+fi
+
+# SSH鍵の場所を確認
+echo ""
+echo -e "${BLUE}使用するSSH鍵を選択してください:${NC}"
+echo ""
+echo "1. ~/.ssh/common"
+echo "2. ~/.ssh/id_rsa"
+echo "3. 手動で指定"
+echo ""
+read -p "選択 (1-3, デフォルト: 1): " SSH_KEY_CHOICE
+
+SSH_KEY_CHOICE=${SSH_KEY_CHOICE:-1}
+
+case $SSH_KEY_CHOICE in
+    1)
+        SSH_KEY_PATH="~/.ssh/common"
+        ;;
+    2)
+        SSH_KEY_PATH="~/.ssh/id_rsa"
+        ;;
+    3)
+        read -p "SSH秘密鍵のパスを入力してください: " SSH_KEY_PATH
+        ;;
+esac
+
+# SSH鍵のパスを展開
+SSH_KEY_PATH=$(eval echo "$SSH_KEY_PATH")
+
+if [ ! -f "$SSH_KEY_PATH" ]; then
+    echo -e "${RED}エラー: SSH鍵が見つかりません: ${SSH_KEY_PATH}${NC}"
     exit 1
 fi
+
+echo -e "${GREEN}SSH鍵: ${SSH_KEY_PATH}${NC}"
 
 # SSH接続確認
 echo ""
 echo -e "${BLUE}SSH接続をテストしています...${NC}"
-if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${USERNAME}@${VM_IP} "echo 'SSH接続成功'" &> /dev/null; then
+if ssh -i "${SSH_KEY_PATH}" -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${USERNAME}@${VM_IP} "echo 'SSH接続成功'" &> /dev/null; then
     echo -e "${GREEN}SSH接続に成功しました${NC}"
 else
     echo -e "${RED}SSH接続に失敗しました${NC}"
     echo -e "${YELLOW}以下を確認してください:${NC}"
     echo -e "  1. VMが完全に起動しているか"
     echo -e "  2. IPアドレスが正しいか"
-    echo -e "  3. SSH鍵が正しく設定されているか"
+    echo -e "  3. SSH鍵が正しく設定されているか (${SSH_KEY_PATH})"
     echo ""
     read -p "続行しますか? (y/N): " CONTINUE
     if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
@@ -139,6 +182,7 @@ cd ansible
 if ansible-playbook \
     -i "inventory/${VM_NAME}" \
     -e "@playbooks/vars_${VM_NAME}.yml" \
+    --private-key="${SSH_KEY_PATH}" \
     playbooks/provision.yml; then
 
     echo ""

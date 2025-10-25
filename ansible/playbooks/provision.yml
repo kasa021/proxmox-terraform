@@ -51,7 +51,15 @@
       apt:
         name: qemu-guest-agent
         state: present
-      notify: Restart QEMU Guest Agent
+      register: qemu_agent_installed
+
+    - name: Enable QEMU Guest Agent
+      systemd:
+        name: qemu-guest-agent
+        enabled: yes
+        state: started
+      when: qemu_agent_installed.changed
+      ignore_errors: yes  # 起動に失敗してもプロビジョニングを続行
 
     # ===== セキュリティ設定 =====
     - name: Configure SSH to disable password authentication
@@ -131,9 +139,3 @@
       service:
         name: ssh
         state: restarted
-
-    - name: Restart QEMU Guest Agent
-      service:
-        name: qemu-guest-agent
-        state: restarted
-        enabled: yes
