@@ -48,9 +48,17 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   started = true
 
-  # QEMU Guest Agentを無効化してIPアドレス取得を待たない
+  # QEMU Guest Agent設定
+  #
+  # テンプレート（ID: 9000）にqemu-guest-agentがインストール済みのため、
+  # enabled = true で問題なく動作します。
+  #
+  # メリット:
+  # - TerraformでIPアドレス自動取得
+  # - Proxmox UIで詳細情報表示
+  # - 正常なシャットダウン
   agent {
-    enabled = false
+    enabled = true  # テンプレートにqemu-guest-agentインストール済み
   }
 
   lifecycle {
