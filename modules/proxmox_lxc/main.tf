@@ -55,10 +55,10 @@ resource "proxmox_virtual_environment_container" "container" {
     }
   }
 
-  # 機能設定（特権的な機能）
-  features {
-    nesting = true  # Docker等のコンテナを実行可能にする
-  }
+  # 機能設定（非特権コンテナではデフォルトのまま）
+  # features {
+  #   nesting = true  # Docker等を実行する場合は手動で有効化が必要
+  # }
 
   lifecycle {
     ignore_changes = [
