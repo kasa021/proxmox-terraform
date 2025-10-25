@@ -32,7 +32,41 @@ proxmox-terraform/
     └── terraform.tfvars.example
 ```
 
-## セットアップ手順
+## クイックスタート（対話形式）
+
+最も簡単な方法は、Makefileを使った対話形式のVM作成です。
+
+```bash
+# VM作成ウィザードを起動
+make create-vm
+```
+
+このコマンドで以下の項目を対話的に入力できます：
+- VM ID (100-999)
+- VM名
+- CPUコア数 (1-32)
+- メモリ容量 (例: 2GB, 1024MB)
+- ディスクサイズ (GB)
+- ストレージ（選択肢から選択）
+- ユーザー名
+- パスワード
+
+設定内容を確認後、自動的にTerraformファイルが生成され、VMが作成されます。
+
+### その他のMakeコマンド
+
+```bash
+make help      # ヘルプを表示
+make init      # Terraformを初期化
+make plan      # 実行計画を確認
+make apply     # Terraformを実行
+make destroy   # VMを削除
+make clean     # 一時ファイルをクリーンアップ
+```
+
+## 手動セットアップ手順
+
+対話形式を使わず、手動で設定する場合は以下の手順に従ってください。
 
 ### 1. 環境変数ファイルの作成（初回のみ）
 
@@ -258,30 +292,6 @@ module "db_server" {
 
 - `.env` または `terraform.tfvars` のAPIトークンが正しいか確認
 - Proxmox側でトークンが有効か、権限が正しく設定されているか確認
-
-## セキュリティ注意事項
-
-**重要**: 機密情報の管理
-
-以下のファイルには機密情報（APIトークン）が含まれており、`.gitignore` で管理対象外になっています：
-
-- `.env` - 環境変数ファイル
-- `*.tfvars` - Terraform変数ファイル
-- `*.tfstate` - Terraformステートファイル
-
-これらのファイルは**絶対にGitにコミットしないでください**。
-
-### 推奨事項
-
-1. **本番環境では環境変数を使用**
-   ```bash
-   export TF_VAR_proxmox_endpoint="..."
-   export TF_VAR_proxmox_api_token="..."
-   ```
-
-2. **Terraform Cloudやvault等のシークレット管理ツールを検討**
-
-3. **定期的にAPIトークンをローテーション**
 
 ## 参考
 
