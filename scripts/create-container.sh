@@ -368,7 +368,7 @@ if [[ "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}ディレクトリ: ${CONTAINER_DIR}${NC}"
     echo ""
 
-    # IPアドレスを取得
+    # IPアドレスを取得（DHCP使用時は表示されない）
     CONTAINER_IP=$(terraform output container_info 2>/dev/null | grep 'ip_address' | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' | tr -d '"' || echo "")
 
     if [ -n "$CONTAINER_IP" ]; then
@@ -376,6 +376,11 @@ if [[ "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
         echo ""
         echo -e "SSH接続:"
         echo -e "  ${BLUE}ssh root@${CONTAINER_IP}${NC}"
+    else
+        echo -e "${YELLOW}IPアドレスはDHCPで自動割り当てされます${NC}"
+        echo -e "${YELLOW}IPアドレスを確認するには:${NC}"
+        echo -e "  ${BLUE}pct exec ${CONTAINER_ID} ip addr show${NC}"
+        echo -e "または Proxmox WebUIでコンテナを確認してください"
     fi
 
     echo ""

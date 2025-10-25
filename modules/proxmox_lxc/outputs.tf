@@ -9,6 +9,6 @@ output "container_name" {
 }
 
 output "ip_address" {
-  description = "コンテナのIPアドレス"
-  value       = try(proxmox_virtual_environment_container.container.ipv4_addresses[1][0], null)
+  description = "コンテナのIPアドレス（DHCPの場合は手動確認が必要）"
+  value       = var.use_dhcp ? null : var.ip_address
 }
