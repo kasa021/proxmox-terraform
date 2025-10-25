@@ -280,7 +280,7 @@ module "ubuntu_vm" {
   vm_name     = "${VM_NAME}"
   vm_id       = ${VM_ID}
   target_node = "pve"
-  template_id = 9000
+  template_id = 9000  # qemu-guest-agent入りテンプレート
 
   # リソース設定
   cores     = ${CORES}
@@ -342,8 +342,25 @@ if [[ "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
     read -p "Ansibleを実行しますか? (y/N): " ANSIBLE_CONFIRM
 
     if [[ "$ANSIBLE_CONFIRM" =~ ^[Yy]$ ]]; then
-        cd ../..
-        ./scripts/provision-vm.sh "${VM_DIR}" "${VM_NAME}" "${USERNAME}"
+        # TerraformからIPアドレスを取得
+        VM_IP=$(terraform output vm_info 2>/dev/null | grep 'ip_address' | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' | tr -d '"' || echo "")
+
+        # nullやtostringが含まれている場合は空にする
+        if [[ "$VM_IP" == *"null"* ]] || [[ "$VM_IP" == *"tostring"* ]] || [ -z "$VM_IP" ]; then
+            VM_IP=""
+        fi
+
+        # 元のディレクトリに戻る
+        cd - > /dev/null
+
+        # IPアドレスを引数として渡す
+        if [ -n "$VM_IP" ]; then
+            echo -e "${GREEN}TerraformからIPアドレスを取得しました: ${VM_IP}${NC}"
+            ./scripts/provision-vm.sh "${VM_DIR}" "${VM_NAME}" "${USERNAME}" "${VM_IP}"
+        else
+            echo -e "${YELLOW}IPアドレスを自動取得できませんでした（手動入力が必要です）${NC}"
+            ./scripts/provision-vm.sh "${VM_DIR}" "${VM_NAME}" "${USERNAME}"
+        fi
     else
         echo -e "${YELLOW}Ansibleをスキップしました${NC}"
         echo -e "後でプロビジョニングする場合:"
