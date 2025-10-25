@@ -10,5 +10,5 @@ output "vm_name" {
 
 output "ip_address" {
   description = "VMのIPアドレス"
-  value       = var.ip_address
+  value       = try(proxmox_virtual_environment_vm.vm.ipv4_addresses[1][0], null)
 }
