@@ -48,9 +48,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   started = true
 
+  # cloud-initの完了を待たない（VMが起動すればOK）
+  on_boot = false
+
   lifecycle {
     ignore_changes = [
       network_device,
+      initialization,
     ]
   }
 }
