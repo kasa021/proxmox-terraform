@@ -48,8 +48,10 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   started = true
 
-  # cloud-initの完了を待たない（VMが起動すればOK）
-  on_boot = false
+  # QEMU Guest Agentを無効化してIPアドレス取得を待たない
+  agent {
+    enabled = false
+  }
 
   lifecycle {
     ignore_changes = [
