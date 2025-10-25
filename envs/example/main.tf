@@ -7,10 +7,10 @@ module "ubuntu_vm" {
   proxmox_insecure   = var.proxmox_insecure
 
   # VM基本設定
-  vm_name       = "ubuntu-server-01"
-  vm_id         = 300
-  target_node   = "pve"
-  template_name = "ubuntu-2204-template"
+  vm_name     = "ubuntu-server-01"
+  vm_id       = 300
+  target_node = "pve"
+  template_id = 9000
 
   # リソース設定
   cores     = 2
@@ -19,13 +19,13 @@ module "ubuntu_vm" {
   storage   = "local-lvm"
 
   # ネットワーク設定
-  ip_address = "192.168.1.100/24"
-  gateway    = "192.168.1.1"
-  bridge     = "vmbr0"
+  use_dhcp = true  # DHCPを使用
+  bridge   = "vmbr1"
 
   # SSH設定
   username       = "ubuntu"
-  ssh_public_key = file("~/.ssh/id_rsa.pub")
+  user_password  = "ubuntu"  # パスワード（本番環境では変数化推奨）
+  ssh_public_key = file("~/.ssh/common.pub")
 
   # タグ
   tags = ["terraform", "ubuntu"]
