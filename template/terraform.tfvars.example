@@ -1,0 +1,6 @@
+# このファイルをコピーして terraform.tfvars を作成してください
+# cp terraform.tfvars.example terraform.tfvars
+
+proxmox_endpoint   = "https://192.168.1.2:8006/"
+proxmox_api_token  = "terraform-prov@pve!terraform-token=your-secret-here"
+proxmox_insecure   = true
